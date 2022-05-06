@@ -1,5 +1,3 @@
-# C++basic
-
 ## 1. in line
 
 ### 总结
@@ -19,11 +17,70 @@
 
 头文件中声明方法
 
-![image-20220425213728668](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220425213728668.png)
+```c++
+class A
+{
+public:
+    void f1(int x); 
+
+    /**
+     * @brief 类中定义了的函数是隐式内联函数,声明要想成为内联函数，必须在实现处(定义处)加inline关键字。
+     *
+     * @param x
+     * @param y
+     */
+    void Foo(int x,int y) ///< 定义即隐式内联函数！
+    {
+    
+    };
+    void f1(int x); ///< 声明后，要想成为内联函数，必须在定义处加inline关键字。  
+};
+```
 
 实现文件中定义内联函数：
 
-![image-20220425213814323](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220425213814323.png)
+```c++
+#include <iostream>
+#include "inline.h"
+
+using namespace std;
+
+/**
+ * @brief inline要起作用,inline要与函数定义放在一起,inline是一种“用于实现的关键字,而不是用于声明的关键字”
+ *
+ * @param x
+ * @param y
+ *
+ * @return 
+ */
+int Foo(int x,int y);  // 函数声明
+inline int Foo(int x,int y) // 函数定义
+{
+    return x+y;
+}
+
+// 定义处加inline关键字，推荐这种写法！
+inline void A::f1(int x){
+
+}
+
+int main()
+{
+
+    
+    cout<<Foo(1,2)<<endl;
+
+}
+/**
+ * 编译器对 inline 函数的处理步骤
+ * 将 inline 函数体复制到 inline 函数调用点处；
+ * 为所用 inline 函数中的局部变量分配内存空间；
+ * 将 inline 函数的的输入参数和返回值映射到调用方法的局部变量空间中；
+ * 如果 inline 函数有多个返回点，将其转变为 inline 函数代码块末尾的分支（使用 GOTO）。
+ */
+```
+
+
 
 ### (2) 虚函数（virtual）是否可以用in line？
 
@@ -35,7 +92,45 @@
 - 内联是在编译期建议编译器内联，而虚函数的多态性在运行期，编译器无法知道运行期调用哪个代码，因此虚函数表现为多态性时（运行期）不可以内联。
 - `inline virtual` 唯一可以内联的时候是：编译器知道所调用的对象是哪个类（如 `Base::who()`），这只有在编译器具有实际对象而不是对象的指针或引用时才会发生。
 
-![image-20220425214724682](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220425214724682.png)
+```c++
+#include <iostream>  
+using namespace std;
+class Base
+{
+public:
+    inline virtual void who()
+    {
+        cout << "I am Base\n";
+    }
+    virtual ~Base() {}
+};
+class Derived : public Base
+{
+public:
+    inline void who()  // 不写inline时隐式内联
+    {
+        cout << "I am Derived\n";
+    }
+};
+
+int main()
+{
+    // 此处的虚函数 who()，是通过类（Base）的具体对象（b）来调用的，编译期间就能确定了，所以它可以是内联的，但最终是否内联取决于编译器。 
+    Base b;
+    b.who();
+
+    // 此处的虚函数是通过指针调用的，呈现多态性，需要在运行时期间才能确定，所以不能为内联。  
+    Base *ptr = new Derived();
+    ptr->who();
+
+    // 因为Base有虚析构函数（virtual ~Base() {}），所以 delete 时，会先调用派生类（Derived）析构函数，再调用基类（Base）析构函数，防止内存泄漏。
+    delete ptr;
+    ptr = nullptr;
+
+    system("pause");
+    return 0;
+} 
+```
 
 
 
@@ -52,15 +147,65 @@
 
 ### (1) 原则1
 
-![image-20220425221848975](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220425221848975.png)
+```c++
+#include<iostream>
+using namespace std;
+class A{};
+int main()
+{
+    cout<<sizeof(A)<<endl;
+    return 0;
+}
+```
+
+
 
 ### (2) 原则2
 
-![image-20220425221912110](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220425221912110.png)
+```c++
+#include<iostream>
+using namespace std;
+class A
+{
+    public:
+        char b;
+        virtual void fun() {};
+        static int c;
+        static int d;
+        static int f;
+};
+
+int main()
+{
+    /**
+     * @brief 16  字节对齐、静态变量不影响类的大小、vptr指针=8
+     */
+    cout<<sizeof(A)<<endl; 
+    return 0;
+}
+```
+
+
 
 ### (3) 原则3
 
-![image-20220425222251526](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20220425222251526.png)
+```c++
+#include<iostream>
+using namespace std;
+class A{
+    virtual void fun();
+    virtual void fun1();
+    virtual void fun2();
+    virtual void fun3();
+};
+int main()
+{
+    cout<<sizeof(A)<<endl; // 8
+    return 0;
+}
+```
+
+
 
 ### (4) 原则4与5
 
